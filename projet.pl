@@ -1,4 +1,4 @@
-boardKahn([[2,2,3,1,2,2],[1,3,1,3,1,3],[3,1,2,2,3,1],[2,3,1,3,1,2],[2,1,3,1,3,2],[1,3,2,2,1,3]]).
+boardKahn([[(2,n),(2,n),(3,n),(1,n),(2,n),(2,n)],[(1,n),(3,n),(1,n),(3,n),(1,n),(3,n)],[(3,n),(1,n),(2,n),(2,n),(3,n),(1,n)],[(2,n),(3,n),(1,n),(3,n),(1,n),(2,n)],[(2,n),(1,n),(3,n),(1,n),(3,n),(2,n)],[(1,n),(3,n),(2,n),(2,n),(1,n),(3,n)]]).
 
 initBoard(Board):- boardKahn(TmpBoard),
 		write(`Entrez le nombre de joueurs : `),
@@ -7,8 +7,10 @@ initBoard(Board):- boardKahn(TmpBoard),
 		affiche(TmpBoard),
 		write(`Joueur 1, entrez une orientation[h/b/g/d] : `),
 		read(Y),
-		oriente(TmpBoard, Board, Y),
-		affiche(Board),
+		oriente(TmpBoard, B, Y),
+		affiche(B),
+		saisie_pion(B, B2, r, 6),
+		saisie_pion(B2, Board, o, 6),
 		!.
 
 jeu:-initBoard(Board), affiche(Board).
@@ -46,4 +48,74 @@ affiche([]):-write(' '), afficheLine(6), !.
 affiche([T|Q]):-write(' '), afficheLine(6), write(' | '), imprime(T), nl, affiche(Q).
 
 imprime([]).
-imprime([T|Q]):-write(T), write(' | '), imprime(Q).
+imprime([T|Q]):-imprime_case(T), write(' | '), imprime(Q).
+
+imprime_case((N,n)):-write(N), write('  '),!.
+imprime_case((N,T)):-write(N), write(T).
+
+
+/*=============================================================================
+Placement_pièces
+*/
+saisie_pion(Board, Board, _, 0):-!.
+saisie_pion(Board, Res, r, 6):-
+	repeat,
+	write('Entrez la ligne de votre Kalista : '),
+	read(L),
+	L=<6, L>=5,
+	write('Entrez la colonne de votre Kalista : '),
+	read(C),
+	C=<6, C>=1,
+	ajouter-pion(Board, R, rk, (L,C)),
+	affiche(R),
+	saisie_pion(R, Res, r, 5),
+	!.
+	
+saisie_pion(Board, Res, o, 6):-
+	repeat,
+	write('Entrez la ligne de votre Kalista : '),
+	read(L),
+	L=<2, L>=1,
+	write('Entrez la colonne de votre Kalista : '),
+	read(C),
+	C=<6, C>=1,
+	ajouter-pion(Board, R, ok, (L,C)),
+	affiche(R),
+	saisie_pion(R, Res, o, 5),
+	!.
+	
+saisie_pion(Board, Res, r, X):-
+	repeat,
+	write('Entrez la ligne de votre Sbire : '),
+	read(L),
+	L=<6, L>=5,
+	write('Entrez la colonne de votre Sbire : '),
+	read(C),
+	C=<6, C>=1,
+	ajouter-pion(Board, R, rs, (L,C)),
+	X1 is X-1,
+	affiche(R),
+	saisie_pion(R, Res, r, X1),
+	!.
+	
+saisie_pion(Board, Res, o, X):-
+	repeat,
+	write('Entrez la ligne de votre Sbire : '),
+	read(L),
+	L=<2, L>=1,
+	write('Entrez la colonne de votre Sbire : '),
+	read(C),
+	C=<6, C>=1,
+	ajouter-pion(Board, R, os, (L,C)),
+	X1 is X-1,
+	affiche(R),
+	saisie_pion(R, Res, o, X1),
+	!.
+
+ajouter-pion([[(N,n)|Ql]|Qc], [[(N,P)|Ql]|Qc], P, (1,1)):-!.
+ajouter-pion(_, _, _, (1,1)):-!, fail.
+ajouter-pion([[T|Q1]|Q2], [[T|R1]|R2], P, (1,Y)):-Y1 is Y-1, ajouter-pion([Q1|Q2], [R1|R2], P, (X,Y1)).
+ajouter-pion([T|Q], [T|R], P, (X,Y)):-X1 is X-1, ajouter-pion(Q,R,P,(X1,Y)),!.
+
+
+
