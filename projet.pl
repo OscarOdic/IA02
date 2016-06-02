@@ -13,7 +13,7 @@ initBoard(Board):- boardKahn(TmpBoard),
 		ajout_pions(B2, Board, o),
 		!.
 
-jeu:-initBoard(Board), affiche(Board).
+jeu:-initBoard(Board), affiche(Board), possibleMoves(Board, r, Mouvements, n), affichePossibleMoves(Mouvements),!.
 
 :-dynamic(joueur/1).
 joue(0).
@@ -37,9 +37,9 @@ retireColonne([],[],[]):-!.
 retireColonne([T|Q],C,NewTable):-retireColonne(Q,C2,NewTable2), premierElement(T,P), concat(P,C2,C), finList(T,F), concat([F],NewTable2,NewTable).
 
 premierElement([],[]):-!.
-premierElement([T|Q],[T]).
+premierElement([T|_],[T]).
 finList([],[]):-!.
-finList([T|Q],Q).
+finList([_|Q],Q).
 
 afficheLine(0):-nl, !.
 afficheLine(N):-write(' -------'), N2 is N-1, afficheLine(N2).
@@ -165,3 +165,88 @@ ajout_pion_IA(B, Board, X, o):-
 	random(1, 7, C),
 	random(1, 3, L),
 	ajouter_pion(B, Board, X, (L,C)).
+
+/*=============================================================================
+Mouvements possible
+*/
+
+element([T|_], Res, (1,C)):-element_colonne(T, Res, C),!.
+element([_|Q], Res, (L,C)):-Tmp is L-1, element(Q, Res, (Tmp, C)),!.
+
+element_colonne([T|_], T, 1):-!.
+element_colonne([_|Q], Res, C):-Tmp is C-1, element_colonne(Q, Res, Tmp).
+
+present([T|_], T):-!.
+present([_|Q], D):-present(Q, D).
+
+libre(Board, (L,C)):-element(Board, (_,n), (L,C)).
+
+possible(Board, (L,C), r):-element(Board, (_,T), (L,C)), T\=rka, T\=rs1, T\=rs2, T\=rs3, T\=rs4, T\=rs5.
+possible(Board, (L,C), o):-element(Board, (_,T), (L,C)), T\=oka, T\=os1, T\=os2, T\=os3, T\=os4, T\=os5.
+
+typeCase(Board, (L,C), Type):-element(Board, (Type,_), (L,C)).
+
+except([], _, []):-!.
+except([E|T], D, R):-present(D, E), !, except(T, D, R).
+except([H|T], D, [H|R]):-except(T, D, R).
+
+pionDuJoueur(rka, r).
+pionDuJoueur(rs1, r).
+pionDuJoueur(rs2, r).
+pionDuJoueur(rs3, r).
+pionDuJoueur(rs4, r).
+pionDuJoueur(rs5, r).
+
+pionDuJoueur(oka, o).
+pionDuJoueur(os1, o).
+pionDuJoueur(os2, o).
+pionDuJoueur(os3, o).
+pionDuJoueur(os4, o).
+pionDuJoueur(os5, o).
+
+casePionsLine([], _, [], _).
+casePionsLine([(T,P)|Q], J, [(T,(L,C))|R], (L,C)):-pionDuJoueur(P,J), Tmp is C+1, casePionsLine(Q, J, R, (L, Tmp)),!.
+casePionsLine([_|Q], J, R, (L,C)):-Tmp is C+1, casePionsLine(Q,J,R, (L, Tmp)).
+
+casePions([], _, [], _).
+casePions([T|Q], J, R, (L,C)):-Tmp is L+1, casePionsLine(T, J, R1, (L,C)), casePions(Q, J, R2, (Tmp,C)), concat(R1, R2, R).
+
+triPions([], []).
+triPions([(_,P)|Q], [P|R]):-triPions(Q, R).
+triPionsKhan([], _, []).
+triPionsKhan([(K,P)|Q], K, [P|R]):-triPionsKhan(Q, K, R),!.
+triPionsKhan([(_,_)|Q], K, R):-triPionsKhan(Q, K, R).
+
+pions(Board, J, R):-casePions(Board, J, Tmp, (1,1)), write(Tmp), nl, triPions(Tmp, R), write(R), nl.
+pionsKhan(Board, J, K, R):-casePions(Board, J, Tmp, (1,1)), triPionsKhan(Tmp, K, R).
+
+proche((L,C1),(L,C2)):-C2 is C1+1.
+proche((L,C1),(L,C2)):-C2 is C1-1.
+proche((L1,C),(L2,C)):-L2 is L1+1.
+proche((L1,C),(L2,C)):-L2 is L1-1.
+
+coordIdentique((A,B),(A,B)).
+
+possibleMove(Board, CoordPion, From, To, 1, Joueur):-proche(CoordPion, To), possible(Board, To, Joueur), \+ coordIdentique(From, To).
+possibleMove(Board, CoordPion, From, To, N, Joueur):-N\=1, possibleMove(Board, CoordPion, From, NewCoord, 1, Joueur), libre(Board, NewCoord), Tmp is N-1, possibleMove(Board, NewCoord, CoordPion, To, Tmp, Joueur).
+
+possibleMovePion(Board, CoordPion, Mouvements, Joueur):-typeCase(Board, CoordPion, Type), write(CoordPion), nl ,setof(To, possibleMove(Board, CoordPion, CoordPion, To, Type, Joueur), Mouvements).
+
+possibleMovePions(_, [], [], _):-!.
+possibleMovePions(Board, [P1|P2], [(P1,R1)|R2], Joueur):-write(P1), nl, possibleMovePion(Board, P1, R1, Joueur), possibleMovePions(Board, P2, R2, Joueur),!.
+possibleMovePions(_, [_|P2], P2, _).
+
+possibleMoves(Board, Joueur, Mouvements, n):-
+	pions(Board, Joueur, Pions),
+	possibleMovePions(Board, Pions, Mouvements, Joueur),!.
+
+possibleMoves(Board, Joueur, Mouvements, Khan):-
+	element(Board, (Type, _), Khan),
+	pionsKhan(Board, Joueur, Type, Pions),
+	possibleMovePions(Board, Pions, Mouvements, Joueur).
+
+affichePossibleMoves([]).
+affichePossibleMoves([(T,P)|Q]):-
+	write(T), write(' -> '),
+	write(P), nl,
+	affichePossibleMoves(Q).
