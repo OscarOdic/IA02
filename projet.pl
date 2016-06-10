@@ -77,7 +77,7 @@ ajout_pions(B, Board, r):-
 	ajout_pion_IA(B3, B4, rs3, r),
 	ajout_pion_IA(B4, B5, rs4, r),
 	ajout_pion_IA(B5, Board, rs5, r),
-	write('TerminÃ©'), nl,
+	write('Terminé'), nl,
 	!.
 
 ajout_pions(B, Board, o):-
@@ -99,7 +99,7 @@ ajout_pions(B, Board, o):-
 	ajout_pion_IA(B3, B4, os3, o),
 	ajout_pion_IA(B4, B5, os4, o),
 	ajout_pion_IA(B5, Board, os5, o),
-	write('TerminÃ©'), nl,
+	write('Terminé'), nl,
 	!.
 
 saisie_pion(Board, Res, rka, r):-
@@ -264,21 +264,16 @@ possibleMovePion(Board, CoordPion, Mouvements, Joueur):-typeCase(Board, CoordPio
 
 possibleMovePions(_, [], [], _):-!.
 possibleMovePions(Board, [P1|P2], [(P1,R1)|R2], Joueur):-possibleMovePion(Board, P1, R1, Joueur), possibleMovePions(Board, P2, R2, Joueur),!.
-possibleMovePions(Board, [P1|P2], R, Joueur):-possibleMovePion(Board, P1, [], Joueur), possibleMovePions(Board, P2, R, Joueur).
+possibleMovePions(Board, [P1|P2], R, Joueur):- \+ possibleMovePion(Board, P1, _, Joueur), possibleMovePions(Board, P2, R, Joueur).
 
 possibleMoves(Board, Joueur, Mouvements, n):-
 	pions(Board, Joueur, Pions),
-	write(' ---- MvtP '), write(Pions), write(' ----'), nl,
-	possibleMovePions(Board, Pions, Mouvements, Joueur),
-	write(' ---- MvtP '), write(Mouvements), write(' ----'), nl, !.
+	possibleMovePions(Board, Pions, Mouvements, Joueur),!.
 
 possibleMoves(Board, Joueur, Mouvements, Khan):-
 	element(Board, (Type, _), Khan),
-	write(' --> Le Khan est en position '), write(Khan), write(' sur une case de type '), write(Type), nl,
 	pionsKhan(Board, Joueur, Type, Pions),
-	write(' ---- MvtKhan '), write(Pions), write(' ----'), nl,
-	possibleMovePions(Board, Pions, Mouvements, Joueur),
-	write(' ---- MvtKhan '), write(Mouvements), write(' ----'), nl.
+	possibleMovePions(Board, Pions, Mouvements, Joueur).
 
 choix(S, N, Min, Max):-
 	repeat,
@@ -315,7 +310,7 @@ saisiePionPerdu(Board, Pions, Res):-
 	write('Entrez une colonne : '),
 	read(C),
 	C>=1, C=<6,
-	ajouter_pion_libre(Board, Res, Pion, (L,C)), write('  TEST PION   '), nl, !.
+	ajouter_pion_libre(Board, Res, Pion, (L,C)),!.
 
 tourJoueurSansKhan(Board, Res, Joueur, C, _, Coord):-
 	C is 1,
@@ -331,17 +326,12 @@ tourJoueurSansKhan(Board, Res, Joueur, C, Khan, Khan):-
 	saisiePionPerdu(Board, Pions, Res),!.
 
 tourJoueur(Board, Res, Joueur, Khan, NewKhan):-
-	write('  TEST 1  '), write(Khan), nl,
 	possibleMoves(Board, Joueur, [], Khan),
-	write('  TEST 1 - 2 '), nl,
 	pionsPerdu(Board, Joueur, []),
-	write('  TEST 1 - 3 '), nl,
 	tourJoueurSansKhan(Board, Res, Joueur, 1, Khan, NewKhan),!.
 
 tourJoueur(Board, Res, Joueur, Khan, NewKhan):-
-	write('  TEST 2  '), nl,
 	possibleMoves(Board, Joueur, [], Khan),
-	write('  TEST 2 - 2  '), nl,
 	repeat,
 	write('1 pour deplacer une piece, 2 pour ajouter une piece perdue : '),
 	read(C),
@@ -349,36 +339,36 @@ tourJoueur(Board, Res, Joueur, Khan, NewKhan):-
 	tourJoueurSansKhan(Board, Res, Joueur, C, Khan, NewKhan),!.
 
 tourJoueur(Board, Res, Joueur, Khan, Coord):-
-	write('  TEST 3  '), nl,
 	possibleMoves(Board, Joueur, Mouvement, Khan),
-	write('  TEST 3 - 2  '), nl,
 	affichePossibleMoves(Mouvement, 1),
 	choixMouvement(Depart, Coord, Mouvement),
 	deplacer(Depart, Coord, Board, Res).
 
 gagne(Board):-
 	perdu(Board, o),
-	write('Rouge a gagnÃ© !').
+	write('Rouge a gagné !').
 
 gagne(Board):-
 	perdu(Board, r),
-	write('Ocre a gagnÃ© !').
+	write('Ocre a gagné !').
 
 tours(Board, _, _):-gagne(Board),!.
 
 tours(Board, r, Khan):-
+	joueur(r),
 	write('Au tour de rouge.'), nl,
 	tourJoueur(Board, R, r, Khan, NewKhan),
-	write(NewKhan), nl,
 	affiche(R),
-	tours(R, o, NewKhan).
+	write(' --> Le Khan est en position '), write(NewKhan), nl,
+	tours(R, o, NewKhan),!.
 
 tours(Board, o, Khan):-
+	joueur(o)
 	write('Au tour de ocre.'), nl,
 	tourJoueur(Board, R, o, Khan, NewKhan),
-	write(NewKhan), nl,
 	affiche(R),
-	tours(R, r, NewKhan).
+	write(' --> Le Khan est en position '), write(NewKhan), nl,
+	tours(R, r, NewKhan),!.
 
 affichePossibleMovesPiece([], _).
 affichePossibleMovesPiece([T|Q], N):-
@@ -392,3 +382,145 @@ affichePossibleMoves([(T,P)|Q], N):-
 	write('Choix '), write(N), write(' : '), write(T), write(' -> '), write(P), nl,
 	Tmp is N+1,
 	affichePossibleMoves(Q, Tmp).
+
+
+/*=============================================================================
+Mouvements IA
+*/
+
+listeMouvements([], []):-!.
+listeMouvements([(_,M)|Q], Res):- listeMouvements(Q, R), concat(M, R, Res).
+
+coordKalista(Board, [T|_]):- element(Board, rka, T),!.
+coordKalista(Board, [T|_]):- element(Board, oka, T),!.
+coordKalista(Board, [_|Q]):- coordKalista(Board, Q).
+
+mouvementsKalista(Board, [(P,M)|_], M):-element(Board, rka, P),!.
+mouvementsKalista(Board, [(P,M)|_], M):-element(Board, oka, P),!.
+mouvementsKalista(Board, [_|Q], Res):-mouvementKalista(Board, Q, Res). 
+
+majMax(Val1, Val2, Val1):-Val1>=Val2,!.
+majMax(_, V, V).
+
+majMin(Val1, Val2, Val1):-Val1=<Val2,!.
+majMin(_, V, V).
+
+max(Board, Joueur, Khan, 0, Max):-
+	evaluer(Board, Joueur, Khan, Max),!.
+
+max(Board, Joueur, Khan, _, Max):-
+	gagne(Board),
+	evaluer(Board, Joueur, Khan, Max),!.
+	
+max(Board, Joueur, Khan, Profondeur, Max):-
+	possibleMoves(Board, Joueur, [], Khan),
+	pionsPerdu(Board, Joueur, []),
+	maxBoucle(Board, Mouvement, Joueur, n, -1000000000, Max, Profondeur),!.
+	
+max(Board, Joueur, Khan, Profondeur, Max):-
+	possibleMoves(Board, Joueur, Mouvement, Khan),
+	maxBoucle(Board, Mouvement, Joueur, Khan, -1000000000, Max, Profondeur).
+
+maxBoucle(_, [], _, _, Max, Max, _):-!.
+maxBoucle(Board, [T|Q], Joueur, Khan, Max, NewMax, Profondeur):-
+	maxBouclePion(Board, T, Joueur, Khan, Max, Tmp, Profondeur),
+	maxBoucle(Board, Q, Joueur, Khan, Tmp, NewMax, Profondeur).
+
+maxBouclePion(_, (_, []), _, _, Max, Max, _):-!.
+maxBouclePion(Board, (Debut, [T|Q]), r, Khan, Max, NewMax, Profondeur):-
+	deplacer(Debut, T, Board, R),
+	P is Profondeur-1,
+	min(Board, o, T, P, Min),
+	majMax(Min, Max, Tmp),
+	maxBouclePion(Board, (Debut, Q), r, Khan, Tmp, NewMax, Profondeur).
+maxBouclePion(Board, (Debut, [T|Q]), o, Khan, Max, NewMax, Profondeur):-
+	deplacer(Debut, T, Board, R),
+	P is Profondeur-1,
+	min(Board, r, T, P, Min),
+	majMax(Min, Max, Tmp),
+	maxBouclePion(Board, (Debut, Q), o, Khan, Tmp, NewMax, Profondeur).
+	
+min(Board, Joueur, Khan, 0, Min):-
+	evaluer(Board, Joueur, Khan, Min),!.
+
+min(Board, Joueur, Khan, _, Min):-
+	gagne(Board),
+	evaluer(Board, Joueur, Khan, Min),!.
+
+min(Board, Joueur, Khan, Profondeur, Min):-
+	possibleMoves(Board, Joueur, [], Khan),
+	pionsPerdu(Board, Joueur, []),
+	minBoucle(Board, Mouvement, Joueur, n, 1000000000, Min, Profondeur),!.
+	
+min(Board, Joueur, Khan, Profondeur, Min):-
+	possibleMoves(Board, Joueur, Mouvement, Khan),
+	minBoucle(Board, Mouvement, Joueur, Khan, 1000000000, Min, Profondeur).
+	
+minBoucle(_, [], _, _, Min, Min, _):-!.
+minBoucle(Board, [T|Q], Joueur, Khan, Min, NewMin, Profondeur):-
+	minBouclePion(Board, T, Joueur, Khan, Min, Tmp, Profondeur),
+	minBoucle(Board, Q, Joueur, Khan, Tmp, NewMin, Profondeur).
+
+minBouclePion(_, (_, []), _, _, Min, Min, _):-!.
+minBouclePion(Board, (Debut, [T|Q]), r, Khan, Min, NewMin, Profondeur):-
+	deplacer(Debut, T, Board, R),
+	P is Profondeur-1,
+	max(Board, o, T, P, Max),
+	majMin(Min, Max, Tmp),
+	minBouclePion(Board, (Debut, Q), r, Khan, Tmp, NewMin, Profondeur).
+minBouclePion(Board, (Debut, [T|Q]), o, Khan, Min, NewMin, Profondeur):-
+	deplacer(Debut, T, Board, R),
+	P is Profondeur-1,
+	max(Board, r, T, P, Max),
+	majMin(Min, Max, Tmp),
+	minBouclePion(Board, (Debut, Q), o, Khan, Tmp, NewMin, Profondeur).
+	
+minMax(Board, Joueur, Khan, Max, Coup):-
+	possibleMoves(Board, Joueur, Mouvement, Khan),
+	minMaxBoucle(Board, Mouvement, Joueur, Khan, -1000000000, Max, Profondeur, Coup).
+	
+minMaxBoucle(_, [], _, _, Max, Max, _, Coup, Coup):-!.
+minMaxBoucle(Board, [T|Q], Joueur, Khan, Max, NewMax, Profondeur, Coup, NewCoup):-
+	minMaxBouclePion(Board, T, Joueur, Khan, Max, Tmp, Profondeur, Coup, CoupTmp),
+	minMaxBoucle(Board, Q, Joueur, Khan, Tmp, NewMax, Profondeur, CoupTmp, NewCoup).
+
+/*maxBouclePion(_, (_, []), _, _, Max, Max, _):-!.
+maxBouclePion(Board, (Debut, [T|Q]), r, Khan, Max, NewMax, Profondeur):-
+	deplacer(Debut, T, Board, R),
+	P is Profondeur-1,
+	min(Board, o, T, P, Min),
+	majMax(Min, Max, Tmp),
+	maxBouclePion(Board, (Debut, Q), r, Khan, Tmp, NewMax, Profondeur).
+maxBouclePion(Board, (Debut, [T|Q]), o, Khan, Max, NewMax, Profondeur):-
+	deplacer(Debut, T, Board, R),
+	P is Profondeur-1,
+	min(Board, r, T, P, Min),
+	majMax(Min, Max, Tmp),
+	maxBouclePion(Board, (Debut, Q), o, Khan, Tmp, NewMax, Profondeur).*/
+
+tours(Board, r, Khan):-
+	write('Au tour de l\'ia rouge'), nl,
+	tourIa(Board, R, r, Khan, NewKhan),
+	tours(R, o, NewKhan),!.
+
+tours(Board, o, Khan):-
+	write('Au tour de l\'ia rouge'), nl,
+	tourIa(Board, R, r, Khan, NewKhan),
+	tours(R, r, NewKhan),!.
+	
+evaluer(Board, Joueur, Khan, Cout):-
+	possiblesMoves(Board, Joueur, Mouvement, Khan),
+	listeMouvements(Mouvement, Liste),
+	coordKalista(Board, Mouvement),
+	Cout=1000000000,!.
+
+evaluer(Board, Joueur, Khan, Cout):-
+	possibleMoves(Board, Joueur, Mouvement, Khan),
+	mouvementsKalista(Board, Mouvement, Kalista),
+	taille(Kalista, Cout),!.
+
+evaluer(_, _, _, 0).
+
+tourIa(Board, Res, Joueur, Khan, NewKhan):-
+	possiblesMoves(Board, Joueur, Mouvement, Khan),
+	
